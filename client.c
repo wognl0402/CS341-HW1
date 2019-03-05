@@ -9,31 +9,31 @@
 #include <sys/uio.h>
 #include <dirent.h>
 
-char BUF[BUFSIZ];
+#define MAX_BUF 1000000
+
+//char BUF[BUFSIZ];
 
 unsigned short checksum(const char *, unsigned);
 void build_header(char *, int);
 
 int main(int argc, char **argv){
+	// Assume command line format is set as follow
+	// $ ./client -h [IP] -p [PORT] -o [op] -s [shift]
 	int c_socket;
 	struct sockaddr_in c_addr;
 	int len;
 	int n;
-	char rcvBuf[BUFSIZ];
 
-	int arg =0;
-	int arg_pt = 0;
-
-	char buf[BUFSIZ];
-	char buff[BUFSIZ];
+	char buf[MAX_BUF];
+	char rec_buf[MAX_BUF];
 
 
 
 	memset(&c_addr, 0, sizeof(c_addr));
-	c_addr.sin_addr.s_addr = inet_addr(argv[1]);
+	c_addr.sin_addr.s_addr = inet_addr(argv[2]);
 	c_addr.sin_family = AF_INET;
-	//c_addr.sin_port = htons(atoi(argv[4]));
-	c_addr.sin_port = htons(5001);
+	c_addr.sin_port = htons(atoi(argv[4]));
+	//c_addr.sin_port = htons(5000);
 
 	printf("Let's");
 	if((c_socket = socket(PF_INET, SOCK_STREAM, 0))<0){
@@ -63,9 +63,17 @@ int main(int argc, char **argv){
 	printf("strlen of buf %d\n", strlen(msg));
 	printf(msg+8);
 	
-	send(c_socket,msg,strlen(buf)+8, 0);
+	//send(c_socket,msg,strlen(buf)+8, 0);
+	int checks;
+	printf("send it two times....\n");
+	checks = send(c_socket,msg, 10, 0);
+	printf("First shot.. %d\n", checks);
+	sleep(1);
+	checks = send(c_socket,msg+10 , strlen(buf)-2, 0);
+	printf("Second shot.. %d\n", checks);
 	
 	unsigned int rec = recv(c_socket, buff, strlen(buf)+8, 0);
+	printf("rec[%d] vs strlen[%d]\n", rec, strlen(buf)+8);
 	printf("rec is %d\n", rec);
 	printf(buff+8);
 
