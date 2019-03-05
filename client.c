@@ -9,12 +9,13 @@
 #include <sys/uio.h>
 #include <dirent.h>
 
-#define MAX_BUF 1000000
+#define MAX_BUF 1000
 
 //char BUF[BUFSIZ];
 char *inputString(FILE*, size_t);
 unsigned short checksum(const char *, unsigned);
 void build_header(char *, int, unsigned char, unsigned char);
+void op_chunk(int, char *, size_t, unsigned char, unsigned char);
 
 int main(int argc, char **argv){
 	// Assume command line format is set as follow
@@ -40,26 +41,36 @@ int main(int argc, char **argv){
 	op = atoi(argv[6]);
 	shift = atoi(argv[8]);
 
-	printf("Let's");
 	if((c_socket = socket(PF_INET, SOCK_STREAM, 0))<0){
 		printf("Can't create\n");
 		return -1;
 	}
-	printf(" make a new");
 	if(connect(c_socket, (struct sockaddr *) &c_addr, sizeof(c_addr)) == -1) {
 		printf("CAN'T CONNECT\n");
 		close(c_socket);
 		return -1;
 	}
-	printf(" connection!\n");
 	//memset(buf, 0 , BUFSIZ);
 
-	printf("20140496> ");
 
 	char *buf;
 	buf = inputString(stdin, 12);
 	//fgets(buf,256,stdin);
 
+	size_t length = strlen(buf);
+	while(length > MAX_BUF - 8){
+		//char *chunk = (char *) calloc(MAX_BUF, sizeof(char));
+		op_chunk (c_socket, buf, MAX_BUF - 8, op, shift);
+
+		buf = buf + MAX_BUF -8;
+		length = length - (MAX_BUF - 8);
+		//memcpy (chunk
+	}
+
+	op_chunk(c_socket, buf, length, op, shift);
+	//printf(buf);
+
+	exit(0);
 
 	char * msg = (char *) calloc(strlen(buf)+8, sizeof(char));
 
@@ -87,11 +98,27 @@ int main(int argc, char **argv){
 	free(m);
 	close(c_socket);
 }
-void send_chunk(const char *buf){
-	char *msg = (char *) calloc(strlen(buf)+8, sizeof(char));
+void op_chunk(int c_socket, char *start, size_t length, unsigned char op, unsigned char shift){
+	char *msg = (char *) calloc (length+8, sizeof(char));
+	memcpy (msg+8, start, length);
+	build_header(msg, length+8, op, shift);
 
-	memcpy (msg+8, buf, strlen(buf));
-	//build_header(msg, strlen(buf));
+	send(c_socket, msg, length+8, 0);
+
+	free(msg);
+	char *rcv_msg = (char *) calloc (length+8, sizeof(char));
+	int rec = recv(c_socket, rcv_msg, length+8, 0);
+	if (checksum(rcv_msg, length+8) != 0){
+		printf("[length+8:%u] [rec:%d]\n", length+8, rec);
+		printf("[chcksm: %x]\n",checksum(rcv_msg, length+8));
+		printf("Something went wrong\n");
+	}
+
+	for (int i = 0; i<length ; i++){
+		printf("%c", rcv_msg[8+i]);
+	}
+	//printf(msg+8);
+	free(rcv_msg);
 }
 unsigned short checksum(const char *buf, unsigned size){
 	unsigned sum = 0;
@@ -114,14 +141,13 @@ unsigned short checksum(const char *buf, unsigned size){
 	return ~sum;
 }
 //void build_header (char* h, unsigned char op, unsigned char shift, unsigned int length){
-void build_header (char* h, int len, unsigned char op, unsigned char shift){
+void build_header (char* h, int length, unsigned char op, unsigned char shift){
 	/*
 	*(unsigned char*)(h) = 'x';
 	*(unsigned char*)(h+1) = 'x';
 	*(unsigned int*)(h+4) = (unsigned int) 'zzzz';
 	*(unsigned short*)(h+2) = checksum(h, length);
 	*/
-	int length = len +8;
 	*(unsigned char*)(h) = op;
 	*(unsigned char*)(h+1) = shift;
 	*(int*)(h+4) = htonl(length);
