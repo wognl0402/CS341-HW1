@@ -209,7 +209,7 @@ void build_header (char* h, unsigned int length, unsigned char op, unsigned char
 	*/
 	*(unsigned char*)(h) = op;
 	*(unsigned char*)(h+1) = shift;
-	*(int*)(h+4) = htonl((int)length);
+	*(unsigned int*)(h+4) = htonl((unsigned int)length);
 	*(unsigned short*)(h+2) = checksum2(h, length);
 }
 
