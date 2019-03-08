@@ -10,6 +10,7 @@
 #include <dirent.h>
 
 #define MAX_BUF 1000000
+#define BUFSIZE 25
 
 //char BUF[BUFSIZ];
 char *inputString(FILE*, size_t);
@@ -28,20 +29,46 @@ int main(int argc, char **argv){
 	int len;
 	int n;
 
-	unsigned char op;
-	unsigned char shift;
+
 	//char buf[MAX_BUF];
+
 
 	char *m;
 
+	char h[BUFSIZE];
+	char p[BUFSIZE];
+	char o[BUFSIZE];
+	char s[BUFSIZE];
+	unsigned char op;
+	unsigned char shift;
+
+	int choice = -1;
+	while ((choice = getopt(argc, argv, "h:p:o:s:")) != -1){
+		switch(choice){
+			case 'h':
+				memcpy(h, optarg, strlen(optarg));
+				break;
+			case 'p':
+				memcpy(p, optarg, strlen(optarg));
+				break;
+			case 'o':
+				memcpy(o, optarg, strlen(optarg));
+				break;
+			case 's':
+				memcpy(s, optarg, strlen(optarg));
+				break;
+			case '?':
+				exit(0);
+		}
+	}
 	memset(&c_addr, 0, sizeof(c_addr));
-	c_addr.sin_addr.s_addr = inet_addr(argv[2]);
+	c_addr.sin_addr.s_addr = inet_addr(h);
 	c_addr.sin_family = AF_INET;
-	c_addr.sin_port = htons(atoi(argv[4]));
+	c_addr.sin_port = htons(atoi(p));
 	//c_addr.sin_port = htons(5000);
 
-	op = atoi(argv[6]);
-	shift = atoi(argv[8]);
+	op = atoi(o);
+	shift = atoi(s);
 
 	if((c_socket = socket(PF_INET, SOCK_STREAM, 0))<0){
 		printf("Can't create\n");
@@ -161,6 +188,10 @@ size_t part_receiver(int c_socket, char *receiver){
 		int rec = recv(c_socket, receiver+rec_part, 8-rec_part, 0);
 		rec_part += rec;
 	}
+	unsigned char op = *(unsigned char *) receiver;
+	if (op != 0 && op != 1){
+		exit(0);
+	}
 	size_t new_length = ntohl(*(unsigned int *)(receiver+4));
 	//printf("at part_receiver, rec_part[%u]\n", rec_part);
 
@@ -207,6 +238,9 @@ void build_header (char* h, unsigned int length, unsigned char op, unsigned char
 	*(unsigned int*)(h+4) = (unsigned int) 'zzzz';
 	*(unsigned short*)(h+2) = checksum(h, length);
 	*/
+	if (op!=1 && op!= 0){
+		exit(0);
+	}
 	*(unsigned char*)(h) = op;
 	*(unsigned char*)(h+1) = shift;
 	*(unsigned int*)(h+4) = htonl((unsigned int)length);

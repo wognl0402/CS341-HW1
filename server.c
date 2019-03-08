@@ -10,7 +10,7 @@
 #include <fcntl.h>
 
 #define MAX_BUF 1000000 
-
+#define BUFSIZE 25
 void receiver(int, char *, size_t);
 size_t part_receiver(int , char *);
 
@@ -30,6 +30,18 @@ int main(int argc, char *argv[]){
 
 	char buff[MAX_BUF];/**Data for sending and receving**/
 
+	char p[BUFSIZE];
+	int choice = -1;
+	while ((choice = getopt(argc, argv, "p:")) != -1){
+		switch(choice){
+			case 'p':
+				memcpy(p, optarg, strlen(optarg));
+				break;
+			case '?':
+				exit(0);
+		}
+	}
+
 	printf("=Server Start\n");
 	server_socket = socket(PF_INET, SOCK_STREAM, 0);
 	if(server_socket<0){
@@ -39,7 +51,7 @@ int main(int argc, char *argv[]){
 
 	memset(&server_addr,0,sizeof(server_addr));
 	server_addr.sin_family=AF_INET;
-	server_addr.sin_port = htons(atoi(argv[1]));
+	server_addr.sin_port = htons(atoi(p));
 	server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
 	/**Designate port and ip address**/
 
@@ -48,7 +60,7 @@ int main(int argc, char *argv[]){
 		exit(1);
 	}
 
-	if(listen(server_socket,5)<0){
+	if(listen(server_socket,100)<0){
 		printf("%s \n","listen error");
 		exit(1);
 	}
@@ -83,8 +95,6 @@ int main(int argc, char *argv[]){
 				printf("rec error\n");
 				exit(1);
 			}
-			printf("Received Message is like [%dbyte]\n", rcv_length);
-			printf(rcv_msg+8);
 			encrypt(rcv_msg);
 			*(unsigned short*) (rcv_msg+2) = (unsigned short) 0; 
 			*(unsigned short*) (rcv_msg+2) = checksum2(rcv_msg, rcv_length);
@@ -155,11 +165,15 @@ size_t part_receiver(int c_socket, char *receiver){
 			return 0;
 		//printf("this core? %d\n", rec_part);
 	}
+	unsigned char op = *(unsigned char *)receiver;
+	if ((op != 0) && (op!= 1)){
+		exit(0);
+	}
 	size_t new_length = ntohl(*(unsigned int *)(receiver+4));
 	//printf("at part_receiver, rec_part[%u]\n", rec_part);
 
 	while(rec_part != new_length){
-		printf("this core??\n");
+		//printf("this core??\n");
 		int rec = recv(c_socket, receiver+rec_part, new_length-rec_part, 0);
 		rec_part += rec;
 		//printf("[%d]\n", rec_part);
@@ -204,7 +218,7 @@ void cipher(char *letter, unsigned char op, unsigned char shift){
 
 	temp -= 97;
 
-	temp += shift;
+	temp += shifter;
 
 	temp = temp % 26;
 	if (temp < 0){
