@@ -50,7 +50,6 @@ int main(int argc, char *argv[]){
 	server_addr.sin_family=AF_INET;
 	server_addr.sin_port = htons(atoi(p));
 	server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-	/**Designate port and ip address**/
 
 	if(bind(server_socket,(struct sockaddr*)&server_addr,sizeof(server_addr))<0){
 		exit(1);
@@ -59,11 +58,8 @@ int main(int argc, char *argv[]){
 	if(listen(server_socket,200)<0){
 		exit(1);
 	}
-	/**Coneect and set  socket**/
 
 	while(1){
-		//unsigned int len = sizeof(c_addr);
-		//int fd;
 		client_addr_size = sizeof (client_addr);
 		client_socket = accept(server_socket, (struct sockaddr *) &client_addr, &client_addr_size);
 		if (client_socket <0){
@@ -74,14 +70,9 @@ int main(int argc, char *argv[]){
 			exit(1);
 		}
 		if (pid == 0){
-			//temporary
 			while(1){
-			//char * rcv_msg = (char *) calloc (MAX_BUF, sizeof (char));
 			int rec;
 			char *rcv_msg;
-			
-			
-			//rec = recv(client_socket, rcv_msg, 25, 0);
 			size_t rcv_length = part_receiver(client_socket, &rcv_msg);
 
 			if (rcv_length == 0){

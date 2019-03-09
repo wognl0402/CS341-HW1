@@ -103,6 +103,10 @@ size_t part_receiver(int c_socket, char *receiver){
 	while(rec_part < 8){
 		int rec = recv(c_socket, receiver+rec_part, 8-rec_part, 0);
 		rec_part += rec;
+		if (rec == 0){
+			close(c_socket);
+			return 0;
+		}
 	}
 	unsigned char op = *(unsigned char *) receiver;
 	if (op != 0 && op != 1){
@@ -113,6 +117,10 @@ size_t part_receiver(int c_socket, char *receiver){
 	while(rec_part != new_length){
 		int rec = recv(c_socket, receiver+rec_part, new_length-rec_part, 0);
 		rec_part += rec;
+		if (rec == 0){
+			close(c_socket);
+			return 0;
+		}
 	}
 	if (checksum2(receiver, new_length) != 0){
 		close(c_socket);
